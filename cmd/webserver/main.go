@@ -12,6 +12,7 @@ import (
 
 	"github.com/EricNeid/go-webserver/database"
 	"github.com/EricNeid/go-webserver/server"
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -89,6 +90,7 @@ func main() {
 	createTables(logger, db)
 
 	// create server
+	gin.SetMode(gin.ReleaseMode)
 	server := server.NewApplicationServer(logger, db, listenAddr)
 	go server.GracefullShutdown(quit, done)
 

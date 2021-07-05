@@ -14,14 +14,14 @@ import (
 type ApplicationServer struct {
 	Webserver *http.Server
 	Logger    *log.Logger
-	db        *pgxpool.Pool
+	Db        *pgxpool.Pool
+	Router    *gin.Engine
 }
 
 // NewApplicationServer creates a new server with the given configuration.
 // listenAddr example: ":5000"
 func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr string) ApplicationServer {
 	// create router
-	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(gin.Logger())
 
@@ -36,12 +36,17 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 			WriteTimeout: 10 * time.Second,
 			IdleTimeout:  15 * time.Second,
 		},
-		db: db,
+		Db:     db,
+		Router: router,
 	}
 
 	// configure routes
 	router.GET("/", welcome)
 
+	user := router.Group("user")
+	{
+		user.POST("", server.addUser)
+	}
 	//router.HandleFunc("/", logCall(logger, welcome))
 	//router.HandleFunc("/user", logCall(logger, server.user))
 
