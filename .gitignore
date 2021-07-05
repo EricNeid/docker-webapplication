@@ -1,0 +1,6 @@
+go-webserver
+/out/
+**__debug_bin**
+.vscode/launch.json
+*.exe
+**/debug.test

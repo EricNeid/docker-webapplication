@@ -1,0 +1,24 @@
+version: '3.3'
+
+services:
+
+  db:
+    image: kartoza/postgis:9.6-2.4
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASS: "postgres"
+      POSTGRES_DBNAME: "localdb"
+      ALLOW_IP_RANGE: "0.0.0.0/0"
+    ports:
+      - "5432:5432"
+
+  webserver:
+    build: .
+    environment:
+      DB_HOST: "db"
+      DB_PORT: 5432
+      DB_USER: "postgres"
+      DB_PASS: "postgres"
+      DB_NAME: "localdb"
+    ports: 
+      - "5000:5000"
