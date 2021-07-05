@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/EricNeid/go-webserver/database"
 	"github.com/EricNeid/go-webserver/model"
@@ -26,4 +27,18 @@ func (srv ApplicationServer) addUser(c *gin.Context) {
 	}
 	res := model.ResponseUserId{UserId: id}
 	c.JSON(http.StatusOK, res)
+}
+
+func (srv ApplicationServer) deleteUser(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Could not parse id")
+		return
+	}
+	err = database.DeleteUser(srv.Logger, srv.Db, id)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Could not delete user")
+		return
+	}
+	c.Status(http.StatusNoContent)
 }

@@ -46,6 +46,7 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 	user := router.Group("user")
 	{
 		user.POST("", server.addUser)
+		user.DELETE("/:id", server.deleteUser)
 	}
 	//router.HandleFunc("/", logCall(logger, welcome))
 	//router.HandleFunc("/user", logCall(logger, server.user))

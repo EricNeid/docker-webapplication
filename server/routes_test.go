@@ -34,18 +34,28 @@ func TestCrudUserIntegration(t *testing.T) {
 	db, _ := integrationtest.GetDbConnectionPool()
 	gin.SetMode(gin.TestMode)
 	unit := NewApplicationServer(log.New(os.Stdout, "test: ", log.LstdFlags), db, ":5001")
-	recoder := httptest.NewRecorder()
 
-	// action
+	var id int64
 	t.Run("Adding user", func(t *testing.T) {
 		// arrange
 		testdata := model.User{Name: "testuser"}
+		res := httptest.NewRecorder()
 		req := httptest.NewRequest("POST", "/user", strings.NewReader(testdata.ToJson()))
 		// action
-		unit.Router.ServeHTTP(recoder, req)
+		unit.Router.ServeHTTP(res, req)
 		// verify
-		verify.Equals(t, 200, recoder.Code)
-		userId = recoder.Result().Body
+		verify.Equals(t, 200, res.Code)
+		result, err := model.NewResponseUserId(res.Result().Body)
+		verify.Ok(t, err)
+		id = result.UserId
+	})
 
+	t.Run("Deleting user", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("DELETE", fmt.Sprintf("/user/%d", id), nil)
+		// action
+		unit.Router.ServeHTTP(res, req)
+		verify.Equals(t, 204, res.Code)
 	})
 }
