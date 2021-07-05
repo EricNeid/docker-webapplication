@@ -71,7 +71,7 @@ func main() {
 	readEnvironmentVariables()
 	readCli()
 
-	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
+	logger := log.New(os.Stdout, "server: ", log.LstdFlags)
 
 	done := make(chan bool, 1)
 	quit := make(chan os.Signal, 1)

@@ -8,11 +8,6 @@ import (
 	"github.com/EricNeid/go-webserver/model"
 )
 
-func welcome(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hello, World!"))
-}
-
 func (srv ApplicationServer) user(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
