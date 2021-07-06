@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/EricNeid/go-webserver/database"
-	"github.com/EricNeid/go-webserver/model"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4"
 )
@@ -15,17 +13,17 @@ func welcome(c *gin.Context) {
 }
 
 func (srv ApplicationServer) addUser(c *gin.Context) {
-	var user model.User
+	var user User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	id, err := database.AddUser(srv.Logger, srv.Db, user)
+	id, err := AddUser(srv.Logger, srv.Db, user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	res := model.ResponseUserId{UserId: id}
+	res := ResponseUserId{UserId: id}
 	c.JSON(http.StatusOK, res)
 }
 
@@ -35,7 +33,7 @@ func (srv ApplicationServer) deleteUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err = database.DeleteUser(srv.Logger, srv.Db, id)
+	err = DeleteUser(srv.Logger, srv.Db, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -49,7 +47,7 @@ func (srv ApplicationServer) getUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := database.GetUser(srv.Logger, srv.Db, id)
+	user, err := GetUser(srv.Logger, srv.Db, id)
 	if err == pgx.ErrNoRows {
 		c.Status(http.StatusNotFound)
 		return
@@ -58,14 +56,14 @@ func (srv ApplicationServer) getUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, model.ResponseUser{User: user})
+	c.JSON(http.StatusOK, ResponseUser{User: user})
 }
 
 func (srv ApplicationServer) getUsers(c *gin.Context) {
-	users, err := database.GetUsers(srv.Logger, srv.Db)
+	users, err := GetUsers(srv.Logger, srv.Db)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, model.ResponseUsers{Users: users})
+	c.JSON(http.StatusOK, ResponseUsers{Users: users})
 }

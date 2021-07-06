@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"strconv"
 
-	"github.com/EricNeid/go-webserver/database"
 	"github.com/EricNeid/go-webserver/server"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -88,11 +87,11 @@ func main() {
 	}
 
 	// create database schema
-	err = database.CreateTablePositions(logger, db)
+	err = server.CreateTablePositions(logger, db)
 	if err != nil {
 		logger.Fatalf("Could not create table %v\n", err)
 	}
-	err = database.CreateTableUsers(logger, db)
+	err = server.CreateTableUsers(logger, db)
 	if err != nil {
 		logger.Fatalf("Could not create table %v\n", err)
 	}

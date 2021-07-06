@@ -8,10 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/EricNeid/go-webserver/database"
 	"github.com/EricNeid/go-webserver/internal/integrationtest"
 	"github.com/EricNeid/go-webserver/internal/verify"
-	"github.com/EricNeid/go-webserver/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,19 +37,19 @@ func TestCrudUserIntegration(t *testing.T) {
 	db, _ := integrationtest.GetDbConnectionPool()
 	gin.SetMode(gin.TestMode)
 	unit := NewApplicationServer(log.New(os.Stdout, "test: ", log.LstdFlags), db, ":5001")
-	database.CreateTableUsers(unit.Logger, unit.Db)
+	CreateTableUsers(unit.Logger, unit.Db)
 
 	var id int64
 	t.Run("Adding user", func(t *testing.T) {
 		// arrange
-		testdata := model.User{Name: "testuser"}
+		testdata := User{Name: "testuser"}
 		res := httptest.NewRecorder()
 		req := httptest.NewRequest("POST", "/user", strings.NewReader(testdata.ToJson()))
 		// action
 		unit.Router.ServeHTTP(res, req)
 		// verify
 		verify.Equals(t, 200, res.Code)
-		result, err := model.NewResponseUserId(res.Result().Body)
+		result, err := NewResponseUserId(res.Result().Body)
 		verify.Ok(t, err)
 		id = result.UserId
 	})
@@ -64,7 +62,7 @@ func TestCrudUserIntegration(t *testing.T) {
 		unit.Router.ServeHTTP(res, req)
 		// verify
 		verify.Equals(t, 200, res.Code)
-		result, err := model.NewResponseUser(res.Result().Body)
+		result, err := NewResponseUser(res.Result().Body)
 		verify.Ok(t, err)
 		verify.Equals(t, "testuser", result.User.Name)
 	})
@@ -77,7 +75,7 @@ func TestCrudUserIntegration(t *testing.T) {
 		unit.Router.ServeHTTP(res, req)
 		// verify
 		verify.Equals(t, 200, res.Code)
-		result, err := model.NewResponseUsers(res.Result().Body)
+		result, err := NewResponseUsers(res.Result().Body)
 		verify.Ok(t, err)
 		verify.Equals(t, 1, len(result.Users))
 	})
