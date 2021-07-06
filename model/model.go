@@ -19,6 +19,14 @@ type ResponseUserId struct {
 	UserId int64
 }
 
+type ResponseUser struct {
+	User User
+}
+
+type ResponseUsers struct {
+	Users []User
+}
+
 func NewUser(in io.Reader) (User, error) {
 	var model User
 	err := json.NewDecoder(in).Decode(&model)
@@ -27,6 +35,18 @@ func NewUser(in io.Reader) (User, error) {
 
 func NewResponseUserId(in io.Reader) (ResponseUserId, error) {
 	var model ResponseUserId
+	err := json.NewDecoder(in).Decode(&model)
+	return model, err
+}
+
+func NewResponseUser(in io.Reader) (ResponseUser, error) {
+	var model ResponseUser
+	err := json.NewDecoder(in).Decode(&model)
+	return model, err
+}
+
+func NewResponseUsers(in io.Reader) (ResponseUsers, error) {
+	var model ResponseUsers
 	err := json.NewDecoder(in).Decode(&model)
 	return model, err
 }

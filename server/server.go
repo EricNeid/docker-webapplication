@@ -43,11 +43,11 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 	// configure routes
 	router.GET("/", welcome)
 
-	user := router.Group("user")
-	{
-		user.POST("", server.addUser)
-		user.DELETE("/:id", server.deleteUser)
-	}
+	router.GET("/user", server.getUsers)
+	router.GET("/user/:id", server.getUser)
+	router.DELETE("/user/:id", server.deleteUser)
+	router.POST("/user", server.addUser)
+
 	//router.HandleFunc("/", logCall(logger, welcome))
 	//router.HandleFunc("/user", logCall(logger, server.user))
 

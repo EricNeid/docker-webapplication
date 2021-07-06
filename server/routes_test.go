@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/EricNeid/go-webserver/database"
 	"github.com/EricNeid/go-webserver/internal/integrationtest"
 	"github.com/EricNeid/go-webserver/internal/verify"
 	"github.com/EricNeid/go-webserver/model"
@@ -28,12 +29,17 @@ func TestWelcome(t *testing.T) {
 }
 
 func TestCrudUserIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test")
+	}
+
 	// arrange
 	integrationtest.Setup()
 	defer integrationtest.Cleanup()
 	db, _ := integrationtest.GetDbConnectionPool()
 	gin.SetMode(gin.TestMode)
 	unit := NewApplicationServer(log.New(os.Stdout, "test: ", log.LstdFlags), db, ":5001")
+	database.CreateTableUsers(unit.Logger, unit.Db)
 
 	var id int64
 	t.Run("Adding user", func(t *testing.T) {
@@ -50,12 +56,49 @@ func TestCrudUserIntegration(t *testing.T) {
 		id = result.UserId
 	})
 
-	t.Run("Deleting user", func(t *testing.T) {
+	t.Run("Getting user by id", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/user/%d", id), nil)
+		// action
+		unit.Router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, 200, res.Code)
+		result, err := model.NewResponseUser(res.Result().Body)
+		verify.Ok(t, err)
+		verify.Equals(t, "testuser", result.User.Name)
+	})
+
+	t.Run("Getting all users", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/user", nil)
+		// action
+		unit.Router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, 200, res.Code)
+		result, err := model.NewResponseUsers(res.Result().Body)
+		verify.Ok(t, err)
+		verify.Equals(t, 1, len(result.Users))
+	})
+
+	t.Run("Deleting user by id", func(t *testing.T) {
 		// arrange
 		res := httptest.NewRecorder()
 		req := httptest.NewRequest("DELETE", fmt.Sprintf("/user/%d", id), nil)
 		// action
 		unit.Router.ServeHTTP(res, req)
+		// verify
 		verify.Equals(t, 204, res.Code)
+	})
+
+	t.Run("Getting user by id should return 404", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/user/%d", id), nil)
+		// action
+		unit.Router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, 404, res.Code)
 	})
 }

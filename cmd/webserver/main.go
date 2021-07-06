@@ -81,13 +81,21 @@ func main() {
 
 	// create db pool
 	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", dbUser, dbPass, dbHost, dbPort, dbName)
-
 	log.Printf("Connecting to db using: %s", dbUrl)
 	db, err := pgxpool.Connect(context.Background(), dbUrl)
 	if err != nil {
 		logger.Fatalf("Could not create database pool: %v\n", err)
 	}
-	createTables(logger, db)
+
+	// create database schema
+	err = database.CreateTablePositions(logger, db)
+	if err != nil {
+		logger.Fatalf("Could not create table %v\n", err)
+	}
+	err = database.CreateTableUsers(logger, db)
+	if err != nil {
+		logger.Fatalf("Could not create table %v\n", err)
+	}
 
 	// create server
 	gin.SetMode(gin.ReleaseMode)
@@ -102,16 +110,4 @@ func main() {
 	<-done
 	db.Close()
 	logger.Println("Server stopped")
-}
-
-func createTables(logger *log.Logger, db *pgxpool.Pool) {
-	err := database.CreateTablePositions(logger, db)
-	if err != nil {
-		logger.Fatalf("Could not create table %v\n", err)
-	}
-
-	err = database.CreateTableUsers(logger, db)
-	if err != nil {
-		logger.Fatalf("Could not create table %v\n", err)
-	}
 }

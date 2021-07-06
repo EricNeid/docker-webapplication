@@ -23,7 +23,7 @@ curl -d '{"username":"max"}' -H "Content-Type: application/json" -X POST http://
 
 ## Testing
 
-Unit and intengration test (using a PostGIS Container) are provided.
+Unit and intengration test (using a PostGIS Container) are provided. Running integration tests requires docker in your path.
 
 To run unit tests:
 
