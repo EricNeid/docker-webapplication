@@ -4,14 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 
-	"github.com/EricNeid/go-webserver/database"
 	"github.com/EricNeid/go-webserver/server"
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -71,7 +72,9 @@ func main() {
 	readEnvironmentVariables()
 	readCli()
 
-	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
+	logFile, _ := os.Create("server.log")
+	logWriter := io.MultiWriter(os.Stdout, logFile)
+	logger := log.New(logWriter, "main", log.LstdFlags)
 
 	done := make(chan bool, 1)
 	quit := make(chan os.Signal, 1)
@@ -80,17 +83,22 @@ func main() {
 
 	// create db pool
 	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", dbUser, dbPass, dbHost, dbPort, dbName)
-
 	log.Printf("Connecting to db using: %s", dbUrl)
 	db, err := pgxpool.Connect(context.Background(), dbUrl)
 	if err != nil {
 		logger.Fatalf("Could not create database pool: %v\n", err)
 	}
-	createTables(logger, db)
 
 	// create server
-	server := server.NewApplicationServer(logger, db, listenAddr)
+	gin.SetMode(gin.ReleaseMode)
+	server := server.NewApplicationServer(db, listenAddr)
+	server.SetLogWriter(logWriter)
 	go server.GracefullShutdown(quit, done)
+
+	logger.Println("Creating database structure", listenAddr)
+	if err := server.CreateDatabaseStructure(); err != nil {
+		logger.Fatalf("Failed to created required database structure: %v\n", err)
+	}
 
 	logger.Println("Server is ready to handle requests at", listenAddr)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -100,16 +108,4 @@ func main() {
 	<-done
 	db.Close()
 	logger.Println("Server stopped")
-}
-
-func createTables(logger *log.Logger, db *pgxpool.Pool) {
-	err := database.CreateTablePositions(logger, db)
-	if err != nil {
-		logger.Fatalf("Could not create table %v\n", err)
-	}
-
-	err = database.CreateTableUsers(logger, db)
-	if err != nil {
-		logger.Fatalf("Could not create table %v\n", err)
-	}
 }

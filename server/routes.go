@@ -1,37 +1,69 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 
-	"github.com/EricNeid/go-webserver/database"
-	"github.com/EricNeid/go-webserver/model"
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v4"
 )
 
-func welcome(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hello, World!"))
+func welcome(c *gin.Context) {
+	c.String(http.StatusOK, "Hello, World!")
 }
 
-func (srv ApplicationServer) user(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "POST":
-		user, err := model.NewUser(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		id, err := database.AddUser(srv.Logger, srv.db, user)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf("Could not add user to datbase: %v", err)))
-			return
-		}
-		res := model.ResponseUserId{UserId: id}
-		w.WriteHeader(http.StatusOK)
-		w.Write(res.ToJson())
+func (srv ApplicationServer) addUser(c *gin.Context) {
+	var user user
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
+	id, err := addUser(srv.logger, srv.db, user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	res := responseUserId{UserId: id}
+	c.JSON(http.StatusCreated, res)
+}
+
+func (srv ApplicationServer) deleteUser(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err = deleteUser(srv.logger, srv.db, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (srv ApplicationServer) getUser(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	user, err := getUser(srv.logger, srv.db, id)
+	if err == pgx.ErrNoRows {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, responseUser{User: user})
+}
+
+func (srv ApplicationServer) getUsers(c *gin.Context) {
+	users, err := getUsers(srv.logger, srv.db)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, responseUsers{Users: users})
 }

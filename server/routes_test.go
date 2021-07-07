@@ -3,18 +3,98 @@ package server
 import (
 	"fmt"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/EricNeid/go-webserver/internal/integrationtest"
 	"github.com/EricNeid/go-webserver/internal/verify"
+	"github.com/gin-gonic/gin"
 )
 
 func TestWelcome(t *testing.T) {
 	// arrange
+	gin.SetMode(gin.TestMode)
 	request := httptest.NewRequest("GET", "/", nil)
-	responseRecorder := httptest.NewRecorder()
+	recoder := httptest.NewRecorder()
+	unit := NewApplicationServer(nil, ":5001")
 	// action
-	welcome(responseRecorder, request)
+	unit.router.ServeHTTP(recoder, request)
 	// verify
-	verify.Assert(t, responseRecorder.Code == 200, fmt.Sprintf("Status code is %d\n", responseRecorder.Code))
-	verify.Assert(t, responseRecorder.Body.String() == "Hello, World!", fmt.Sprintf("Body is %s\n", responseRecorder.Body.String()))
+	verify.Assert(t, recoder.Code == 200, fmt.Sprintf("Status code is %d\n", recoder.Code))
+	verify.Assert(t, recoder.Body.String() == "Hello, World!", fmt.Sprintf("Body is %s\n", recoder.Body.String()))
+}
+
+func TestCrudUserIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test")
+	}
+
+	// arrange
+	integrationtest.Setup()
+	defer integrationtest.Cleanup()
+	db, _ := integrationtest.GetDbConnectionPool()
+	gin.SetMode(gin.TestMode)
+	unit := NewApplicationServer(db, ":5001")
+	CreateTableUsers(unit.logger, unit.db)
+
+	var id int64
+	t.Run("Adding user", func(t *testing.T) {
+		// arrange
+		testdata := user{Name: "testuser"}
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/user", strings.NewReader(testdata.toJson()))
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, 200, res.Code)
+		result, err := newResponseUserId(res.Result().Body)
+		verify.Ok(t, err)
+		id = result.UserId
+	})
+
+	t.Run("Getting user by id", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/user/%d", id), nil)
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, 200, res.Code)
+		result, err := newResponseUser(res.Result().Body)
+		verify.Ok(t, err)
+		verify.Equals(t, "testuser", result.User.Name)
+	})
+
+	t.Run("Getting all users", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/user", nil)
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, 200, res.Code)
+		result, err := newResponseUsers(res.Result().Body)
+		verify.Ok(t, err)
+		verify.Equals(t, 1, len(result.Users))
+	})
+
+	t.Run("Deleting user by id", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("DELETE", fmt.Sprintf("/user/%d", id), nil)
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, 204, res.Code)
+	})
+
+	t.Run("Getting user by id should return 404", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/user/%d", id), nil)
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, 404, res.Code)
+	})
 }

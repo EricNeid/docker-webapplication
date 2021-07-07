@@ -2,32 +2,37 @@ package server
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-const timeFormat string = "Mon Jan 2 15:04:05 2006"
-
 type ApplicationServer struct {
-	Webserver *http.Server
-	Logger    *log.Logger
+	logger    *log.Logger
 	db        *pgxpool.Pool
+	webserver *http.Server
+	router    *gin.Engine
 }
 
 // NewApplicationServer creates a new server with the given configuration.
 // listenAddr example: ":5000"
-func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr string) ApplicationServer {
+func NewApplicationServer(db *pgxpool.Pool, listenAddr string) ApplicationServer {
+	// create logger
+	logger := log.New(os.Stdout, "server", log.LstdFlags)
+
 	// create router
-	router := http.NewServeMux()
+	router := gin.Default()
+	router.Use(gin.Logger())
 
 	// create application server
 	server := ApplicationServer{
-		Logger: logger,
-		Webserver: &http.Server{
+		logger: logger,
+		webserver: &http.Server{
 			Addr:         listenAddr,
 			Handler:      router,
 			ErrorLog:     logger,
@@ -35,20 +40,41 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 			WriteTimeout: 10 * time.Second,
 			IdleTimeout:  15 * time.Second,
 		},
-		db: db,
+		db:     db,
+		router: router,
 	}
 
 	// configure routes
-	router.HandleFunc("/", logCall(logger, welcome))
-	router.HandleFunc("/user", logCall(logger, server.user))
+	router.GET("/", welcome)
+
+	router.GET("/user", server.getUsers)
+	router.GET("/user/:id", server.getUser)
+	router.DELETE("/user/:id", server.deleteUser)
+	router.POST("/user", server.addUser)
 
 	return server
 }
 
+func (srv ApplicationServer) SetLogWriter(out io.Writer) {
+	srv.logger.SetOutput(out)
+	gin.DefaultWriter = out
+}
+
+func (srv ApplicationServer) CreateDatabaseStructure() error {
+	logger := srv.logger
+	db := srv.db
+	err := CreateTablePositions(logger, db)
+	if err != nil {
+		return err
+	}
+	err = CreateTableUsers(logger, db)
+	return err
+}
+
 func (srv ApplicationServer) GracefullShutdown(quit <-chan os.Signal, done chan<- bool) {
 	<-quit
-	server := srv.Webserver
-	logger := srv.Logger
+	server := srv.webserver
+	logger := srv.logger
 
 	logger.Println("Server is shutting down...")
 
@@ -64,13 +90,5 @@ func (srv ApplicationServer) GracefullShutdown(quit <-chan os.Signal, done chan<
 }
 
 func (srv ApplicationServer) ListenAndServe() error {
-	return srv.Webserver.ListenAndServe()
-}
-
-func logCall(logger *log.Logger, handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		timestamp := time.Now()
-		logger.Printf("%s - %s\n", timestamp.Format(timeFormat), r.URL.Path)
-		handler(w, r)
-	}
+	return srv.webserver.ListenAndServe()
 }
