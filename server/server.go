@@ -12,10 +12,10 @@ import (
 )
 
 type ApplicationServer struct {
-	Webserver *http.Server
 	Logger    *log.Logger
 	Db        *pgxpool.Pool
-	Router    *gin.Engine
+	webserver *http.Server
+	router    *gin.Engine
 }
 
 // NewApplicationServer creates a new server with the given configuration.
@@ -28,7 +28,7 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 	// create application server
 	server := ApplicationServer{
 		Logger: logger,
-		Webserver: &http.Server{
+		webserver: &http.Server{
 			Addr:         listenAddr,
 			Handler:      router,
 			ErrorLog:     logger,
@@ -37,7 +37,7 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 			IdleTimeout:  15 * time.Second,
 		},
 		Db:     db,
-		Router: router,
+		router: router,
 	}
 
 	// configure routes
@@ -56,7 +56,7 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 
 func (srv ApplicationServer) GracefullShutdown(quit <-chan os.Signal, done chan<- bool) {
 	<-quit
-	server := srv.Webserver
+	server := srv.webserver
 	logger := srv.Logger
 
 	logger.Println("Server is shutting down...")
@@ -73,5 +73,5 @@ func (srv ApplicationServer) GracefullShutdown(quit <-chan os.Signal, done chan<
 }
 
 func (srv ApplicationServer) ListenAndServe() error {
-	return srv.Webserver.ListenAndServe()
+	return srv.webserver.ListenAndServe()
 }

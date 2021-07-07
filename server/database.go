@@ -32,7 +32,7 @@ func CreateTablePositions(logger *log.Logger, db *pgxpool.Pool) error {
 	return err
 }
 
-func AddPosition(logger *log.Logger, db *pgxpool.Pool, position Position) (int64, error) {
+func addPosition(logger *log.Logger, db *pgxpool.Pool, position vehicleState) (int64, error) {
 	_, err := db.Exec(
 		context.Background(),
 		fmt.Sprintf(
@@ -45,7 +45,7 @@ func AddPosition(logger *log.Logger, db *pgxpool.Pool, position Position) (int64
 	return 1, err
 }
 
-func DeletePosition(logger *log.Logger, db *pgxpool.Pool, id int64) error {
+func deletePosition(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 	_, err := db.Exec(
 		context.Background(),
 		fmt.Sprintf(
@@ -57,9 +57,9 @@ func DeletePosition(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 	return err
 }
 
-// GetPosition returns the position that is ascoiated with the given id.
+// getPosition returns the position that is ascoiated with the given id.
 // If no position exists, pgx.ErrNoRows is returned.
-func GetPosition(logger *log.Logger, db *pgxpool.Pool, id int64) (Position, error) {
+func getPosition(logger *log.Logger, db *pgxpool.Pool, id int64) (vehicleState, error) {
 	var position orb.Point
 	err := db.QueryRow(
 		context.Background(),
@@ -69,11 +69,11 @@ func GetPosition(logger *log.Logger, db *pgxpool.Pool, id int64) (Position, erro
 			id,
 		),
 	).Scan(wkb.Scanner(&position))
-	return Position{Position: position}, err
+	return vehicleState{Position: position}, err
 }
 
-func GetPositions(logger *log.Logger, db *pgxpool.Pool) ([]Position, error) {
-	var positions []Position
+func getPositions(logger *log.Logger, db *pgxpool.Pool) ([]vehicleState, error) {
+	var positions []vehicleState
 	// query all rows
 	rows, err := db.Query(
 		context.Background(),
@@ -94,7 +94,7 @@ func GetPositions(logger *log.Logger, db *pgxpool.Pool) ([]Position, error) {
 		if err != nil {
 			return positions, err
 		}
-		positions = append(positions, Position{Position: position})
+		positions = append(positions, vehicleState{Position: position})
 	}
 
 	return positions, err
@@ -118,7 +118,7 @@ func CreateTableUsers(logger *log.Logger, db *pgxpool.Pool) error {
 	return err
 }
 
-func AddUser(logger *log.Logger, db *pgxpool.Pool, user User) (int64, error) {
+func addUser(logger *log.Logger, db *pgxpool.Pool, user user) (int64, error) {
 	var id int64
 	err := db.QueryRow(
 		context.Background(),
@@ -131,7 +131,7 @@ func AddUser(logger *log.Logger, db *pgxpool.Pool, user User) (int64, error) {
 	return id, err
 }
 
-func DeleteUser(logger *log.Logger, db *pgxpool.Pool, id int64) error {
+func deleteUser(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 	_, err := db.Exec(
 		context.Background(),
 		fmt.Sprintf(
@@ -143,9 +143,9 @@ func DeleteUser(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 	return err
 }
 
-// GetUser returns the user that is ascoiated with the given id.
+// getUser returns the user that is ascoiated with the given id.
 // If no users exists, pgx.ErrNoRows is returned.
-func GetUser(logger *log.Logger, db *pgxpool.Pool, id int64) (User, error) {
+func getUser(logger *log.Logger, db *pgxpool.Pool, id int64) (user, error) {
 	var name string
 	err := db.QueryRow(
 		context.Background(),
@@ -155,11 +155,11 @@ func GetUser(logger *log.Logger, db *pgxpool.Pool, id int64) (User, error) {
 			id,
 		),
 	).Scan(&name)
-	return User{Name: name}, err
+	return user{Name: name}, err
 }
 
-func GetUsers(logger *log.Logger, db *pgxpool.Pool) ([]User, error) {
-	var users []User
+func getUsers(logger *log.Logger, db *pgxpool.Pool) ([]user, error) {
+	var users []user
 	// query all rows
 	rows, err := db.Query(
 		context.Background(),
@@ -180,7 +180,7 @@ func GetUsers(logger *log.Logger, db *pgxpool.Pool) ([]User, error) {
 		if err != nil {
 			return users, err
 		}
-		users = append(users, User{Name: name})
+		users = append(users, user{Name: name})
 	}
 
 	return users, err

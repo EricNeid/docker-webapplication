@@ -31,9 +31,9 @@ func TestPositionSchemaIntegration(t *testing.T) {
 	var id int64
 	t.Run("adding position", func(t *testing.T) {
 		// arrange
-		position := Position{Position: [2]float64{20, 30}}
+		position := vehicleState{Position: [2]float64{20, 30}}
 		// action
-		id, err = AddPosition(logger, db, position)
+		id, err = addPosition(logger, db, position)
 		// verify
 		verify.Ok(t, err)
 		verify.Assert(t, id > 0, "no id returned")
@@ -41,7 +41,7 @@ func TestPositionSchemaIntegration(t *testing.T) {
 
 	t.Run("getting position by id", func(t *testing.T) {
 		// action
-		position, err := GetPosition(logger, db, id)
+		position, err := getPosition(logger, db, id)
 		// verify
 		verify.Ok(t, err)
 		verify.Assert(t, position.Position.X()-20.0 < 0.1, "Unexpected value returned")
@@ -50,7 +50,7 @@ func TestPositionSchemaIntegration(t *testing.T) {
 
 	t.Run("Getting all positions", func(t *testing.T) {
 		// action
-		positions, err := GetPositions(logger, db)
+		positions, err := getPositions(logger, db)
 		// verify
 		verify.Ok(t, err)
 		verify.Equals(t, 1, len(positions))
@@ -58,14 +58,14 @@ func TestPositionSchemaIntegration(t *testing.T) {
 
 	t.Run("delete position by id", func(t *testing.T) {
 		// action
-		err := DeletePosition(logger, db, id)
+		err := deletePosition(logger, db, id)
 		// verify
 		verify.Ok(t, err)
 	})
 
 	t.Run("getting position by id, should return nil", func(t *testing.T) {
 		// action
-		_, err := GetPosition(logger, db, id)
+		_, err := getPosition(logger, db, id)
 		// verify
 		verify.Equals(t, pgx.ErrNoRows, err)
 	})
@@ -92,9 +92,9 @@ func TestUserSchemaIntegration(t *testing.T) {
 	var id int64
 	t.Run("adding user", func(t *testing.T) {
 		// arrange
-		user := User{Name: "testuser"}
+		user := user{Name: "testuser"}
 		// action
-		id, err = AddUser(logger, db, user)
+		id, err = addUser(logger, db, user)
 		// verify
 		verify.Ok(t, err)
 		verify.Assert(t, id > 0, "no id returned")
@@ -102,7 +102,7 @@ func TestUserSchemaIntegration(t *testing.T) {
 
 	t.Run("getting user by id", func(t *testing.T) {
 		// action
-		user, err := GetUser(logger, db, id)
+		user, err := getUser(logger, db, id)
 		// verify
 		verify.Ok(t, err)
 		verify.Equals(t, "testuser", user.Name)
@@ -110,7 +110,7 @@ func TestUserSchemaIntegration(t *testing.T) {
 
 	t.Run("Getting all users", func(t *testing.T) {
 		// action
-		users, err := GetUsers(logger, db)
+		users, err := getUsers(logger, db)
 		// verify
 		verify.Ok(t, err)
 		verify.Equals(t, 1, len(users))
@@ -119,14 +119,14 @@ func TestUserSchemaIntegration(t *testing.T) {
 
 	t.Run("delete user by id", func(t *testing.T) {
 		// action
-		err := DeleteUser(logger, db, id)
+		err := deleteUser(logger, db, id)
 		// verify
 		verify.Ok(t, err)
 	})
 
 	t.Run("getting user by id, should return nil", func(t *testing.T) {
 		// action
-		_, err := GetUser(logger, db, id)
+		_, err := getUser(logger, db, id)
 		// verify
 		verify.Equals(t, pgx.ErrNoRows, err)
 	})
