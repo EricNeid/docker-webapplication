@@ -18,13 +18,13 @@ func (srv ApplicationServer) addUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	id, err := addUser(srv.Logger, srv.Db, user)
+	id, err := addUser(srv.logger, srv.db, user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	res := responseUserId{UserId: id}
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusCreated, res)
 }
 
 func (srv ApplicationServer) deleteUser(c *gin.Context) {
@@ -33,7 +33,7 @@ func (srv ApplicationServer) deleteUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err = deleteUser(srv.Logger, srv.Db, id)
+	err = deleteUser(srv.logger, srv.db, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -47,7 +47,7 @@ func (srv ApplicationServer) getUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := getUser(srv.Logger, srv.Db, id)
+	user, err := getUser(srv.logger, srv.db, id)
 	if err == pgx.ErrNoRows {
 		c.Status(http.StatusNotFound)
 		return
@@ -60,7 +60,7 @@ func (srv ApplicationServer) getUser(c *gin.Context) {
 }
 
 func (srv ApplicationServer) getUsers(c *gin.Context) {
-	users, err := getUsers(srv.Logger, srv.Db)
+	users, err := getUsers(srv.logger, srv.db)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

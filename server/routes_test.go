@@ -2,9 +2,7 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -18,7 +16,7 @@ func TestWelcome(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	request := httptest.NewRequest("GET", "/", nil)
 	recoder := httptest.NewRecorder()
-	unit := NewApplicationServer(log.New(os.Stdout, "test: ", log.LstdFlags), nil, ":5001")
+	unit := NewApplicationServer(nil, ":5001")
 	// action
 	unit.router.ServeHTTP(recoder, request)
 	// verify
@@ -36,8 +34,8 @@ func TestCrudUserIntegration(t *testing.T) {
 	defer integrationtest.Cleanup()
 	db, _ := integrationtest.GetDbConnectionPool()
 	gin.SetMode(gin.TestMode)
-	unit := NewApplicationServer(log.New(os.Stdout, "test: ", log.LstdFlags), db, ":5001")
-	CreateTableUsers(unit.Logger, unit.Db)
+	unit := NewApplicationServer(db, ":5001")
+	CreateTableUsers(unit.logger, unit.db)
 
 	var id int64
 	t.Run("Adding user", func(t *testing.T) {

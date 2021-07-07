@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -71,7 +72,9 @@ func main() {
 	readEnvironmentVariables()
 	readCli()
 
-	logger := log.New(os.Stdout, "server: ", log.LstdFlags)
+	logFile, _ := os.Create("server.log")
+	logWriter := io.MultiWriter(os.Stdout, logFile)
+	logger := log.New(logWriter, "main", log.LstdFlags)
 
 	done := make(chan bool, 1)
 	quit := make(chan os.Signal, 1)
@@ -86,20 +89,16 @@ func main() {
 		logger.Fatalf("Could not create database pool: %v\n", err)
 	}
 
-	// create database schema
-	err = server.CreateTablePositions(logger, db)
-	if err != nil {
-		logger.Fatalf("Could not create table %v\n", err)
-	}
-	err = server.CreateTableUsers(logger, db)
-	if err != nil {
-		logger.Fatalf("Could not create table %v\n", err)
-	}
-
 	// create server
 	gin.SetMode(gin.ReleaseMode)
-	server := server.NewApplicationServer(logger, db, listenAddr)
+	server := server.NewApplicationServer(db, listenAddr)
+	server.SetLogWriter(logWriter)
 	go server.GracefullShutdown(quit, done)
+
+	logger.Println("Creating database structure", listenAddr)
+	if err := server.CreateDatabaseStructure(); err != nil {
+		logger.Fatalf("Failed to created required database structure: %v\n", err)
+	}
 
 	logger.Println("Server is ready to handle requests at", listenAddr)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {

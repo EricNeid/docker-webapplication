@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -12,22 +13,25 @@ import (
 )
 
 type ApplicationServer struct {
-	Logger    *log.Logger
-	Db        *pgxpool.Pool
+	logger    *log.Logger
+	db        *pgxpool.Pool
 	webserver *http.Server
 	router    *gin.Engine
 }
 
 // NewApplicationServer creates a new server with the given configuration.
 // listenAddr example: ":5000"
-func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr string) ApplicationServer {
+func NewApplicationServer(db *pgxpool.Pool, listenAddr string) ApplicationServer {
+	// create logger
+	logger := log.New(os.Stdout, "server", log.LstdFlags)
+
 	// create router
 	router := gin.Default()
 	router.Use(gin.Logger())
 
 	// create application server
 	server := ApplicationServer{
-		Logger: logger,
+		logger: logger,
 		webserver: &http.Server{
 			Addr:         listenAddr,
 			Handler:      router,
@@ -36,7 +40,7 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 			WriteTimeout: 10 * time.Second,
 			IdleTimeout:  15 * time.Second,
 		},
-		Db:     db,
+		db:     db,
 		router: router,
 	}
 
@@ -48,16 +52,29 @@ func NewApplicationServer(logger *log.Logger, db *pgxpool.Pool, listenAddr strin
 	router.DELETE("/user/:id", server.deleteUser)
 	router.POST("/user", server.addUser)
 
-	//router.HandleFunc("/", logCall(logger, welcome))
-	//router.HandleFunc("/user", logCall(logger, server.user))
-
 	return server
+}
+
+func (srv ApplicationServer) SetLogWriter(out io.Writer) {
+	srv.logger.SetOutput(out)
+	gin.DefaultWriter = out
+}
+
+func (srv ApplicationServer) CreateDatabaseStructure() error {
+	logger := srv.logger
+	db := srv.db
+	err := CreateTablePositions(logger, db)
+	if err != nil {
+		return err
+	}
+	err = CreateTableUsers(logger, db)
+	return err
 }
 
 func (srv ApplicationServer) GracefullShutdown(quit <-chan os.Signal, done chan<- bool) {
 	<-quit
 	server := srv.webserver
-	logger := srv.Logger
+	logger := srv.logger
 
 	logger.Println("Server is shutting down...")
 
