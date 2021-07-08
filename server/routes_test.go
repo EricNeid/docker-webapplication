@@ -1,7 +1,9 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -40,14 +42,17 @@ func TestCrudUserIntegration(t *testing.T) {
 	var id int64
 	t.Run("Adding user", func(t *testing.T) {
 		// arrange
-		testdata := user{Name: "testuser"}
+		testdata, _ := json.Marshal(user{Name: "testuser"})
 		res := httptest.NewRecorder()
-		req := httptest.NewRequest("POST", "/user", strings.NewReader(testdata.toJson()))
+		req := httptest.NewRequest("POST", "/user", strings.NewReader(string(testdata)))
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
-		verify.Equals(t, 200, res.Code)
-		result, err := newResponseUserId(res.Result().Body)
+		verify.Equals(t, http.StatusCreated, res.Code)
+		result := struct {
+			UserId int64 `json:"userId"`
+		}{}
+		err := json.NewDecoder(res.Body).Decode(&result)
 		verify.Ok(t, err)
 		id = result.UserId
 	})
@@ -59,8 +64,11 @@ func TestCrudUserIntegration(t *testing.T) {
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
-		verify.Equals(t, 200, res.Code)
-		result, err := newResponseUser(res.Result().Body)
+		verify.Equals(t, http.StatusOK, res.Code)
+		result := struct {
+			User user `json:"user"`
+		}{}
+		err := json.NewDecoder(res.Body).Decode(&result)
 		verify.Ok(t, err)
 		verify.Equals(t, "testuser", result.User.Name)
 	})
@@ -72,8 +80,11 @@ func TestCrudUserIntegration(t *testing.T) {
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
-		verify.Equals(t, 200, res.Code)
-		result, err := newResponseUsers(res.Result().Body)
+		verify.Equals(t, http.StatusOK, res.Code)
+		result := struct {
+			Users []user `json:"users"`
+		}{}
+		err := json.NewDecoder(res.Body).Decode(&result)
 		verify.Ok(t, err)
 		verify.Equals(t, 1, len(result.Users))
 	})
@@ -85,7 +96,7 @@ func TestCrudUserIntegration(t *testing.T) {
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
-		verify.Equals(t, 204, res.Code)
+		verify.Equals(t, http.StatusNoContent, res.Code)
 	})
 
 	t.Run("Getting user by id should return 404", func(t *testing.T) {
@@ -95,6 +106,6 @@ func TestCrudUserIntegration(t *testing.T) {
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
-		verify.Equals(t, 404, res.Code)
+		verify.Equals(t, http.StatusNotFound, res.Code)
 	})
 }

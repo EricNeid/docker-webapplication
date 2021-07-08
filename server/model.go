@@ -5,21 +5,9 @@ import (
 )
 
 type vehicleState struct {
-	Position orb.Point
+	Position orb.Point `json:"position"`
 }
 
 type user struct {
-	Name string
-}
-
-type responseUserId struct {
-	UserId int64
-}
-
-type responseUser struct {
-	User user
-}
-
-type responseUsers struct {
-	Users []user
+	Name string `json:"name"`
 }

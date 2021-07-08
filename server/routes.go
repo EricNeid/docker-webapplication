@@ -23,7 +23,11 @@ func (srv ApplicationServer) addUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	res := responseUserId{UserId: id}
+	res := struct {
+		UserId int64 `json:"userId"`
+	}{
+		UserId: id,
+	}
 	c.JSON(http.StatusCreated, res)
 }
 
@@ -47,7 +51,7 @@ func (srv ApplicationServer) getUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := getUser(srv.logger, srv.db, id)
+	retrievedUser, err := getUser(srv.logger, srv.db, id)
 	if err == pgx.ErrNoRows {
 		c.Status(http.StatusNotFound)
 		return
@@ -56,7 +60,12 @@ func (srv ApplicationServer) getUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, responseUser{User: user})
+	res := struct {
+		User user `json:"user"`
+	}{
+		User: retrievedUser,
+	}
+	c.JSON(http.StatusOK, res)
 }
 
 func (srv ApplicationServer) getUsers(c *gin.Context) {
@@ -65,5 +74,10 @@ func (srv ApplicationServer) getUsers(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, responseUsers{Users: users})
+	res := struct {
+		Users []user `json:"users"`
+	}{
+		Users: users,
+	}
+	c.JSON(http.StatusOK, res)
 }
