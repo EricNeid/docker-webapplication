@@ -44,7 +44,7 @@ func TestCrudUserIntegration(t *testing.T) {
 		// arrange
 		testdata, _ := json.Marshal(user{Name: "testuser"})
 		res := httptest.NewRecorder()
-		req := httptest.NewRequest("POST", "/user", strings.NewReader(string(testdata)))
+		req := httptest.NewRequest("POST", "/users", strings.NewReader(string(testdata)))
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
@@ -60,7 +60,7 @@ func TestCrudUserIntegration(t *testing.T) {
 	t.Run("Getting user by id", func(t *testing.T) {
 		// arrange
 		res := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", fmt.Sprintf("/user/%d", id), nil)
+		req := httptest.NewRequest("GET", fmt.Sprintf("/users/%d", id), nil)
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
@@ -76,7 +76,7 @@ func TestCrudUserIntegration(t *testing.T) {
 	t.Run("Getting all users", func(t *testing.T) {
 		// arrange
 		res := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/user", nil)
+		req := httptest.NewRequest("GET", "/users", nil)
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
@@ -92,7 +92,7 @@ func TestCrudUserIntegration(t *testing.T) {
 	t.Run("Deleting user by id", func(t *testing.T) {
 		// arrange
 		res := httptest.NewRecorder()
-		req := httptest.NewRequest("DELETE", fmt.Sprintf("/user/%d", id), nil)
+		req := httptest.NewRequest("DELETE", fmt.Sprintf("/users/%d", id), nil)
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
@@ -102,7 +102,7 @@ func TestCrudUserIntegration(t *testing.T) {
 	t.Run("Getting user by id should return 404", func(t *testing.T) {
 		// arrange
 		res := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", fmt.Sprintf("/user/%d", id), nil)
+		req := httptest.NewRequest("GET", fmt.Sprintf("/users/%d", id), nil)
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
