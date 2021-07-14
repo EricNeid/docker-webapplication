@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -52,7 +53,7 @@ func deleteUser(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 }
 
 // getUser returns the user that is ascoiated with the given id.
-// If no users exists, pgx.ErrNoRows is returned.
+// If no users exists, ErrorNotFound is returned.
 func getUser(logger *log.Logger, db *pgxpool.Pool, id int64) (user, error) {
 	var name string
 	err := db.QueryRow(
@@ -63,6 +64,9 @@ func getUser(logger *log.Logger, db *pgxpool.Pool, id int64) (user, error) {
 			id,
 		),
 	).Scan(&name)
+	if err == pgx.ErrNoRows {
+		err = ErrorNotFound // return custom error
+	}
 	return user{Name: name}, err
 }
 

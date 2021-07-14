@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/encoding/wkb"
@@ -20,8 +21,8 @@ func CreateTablePositions(logger *log.Logger, db *pgxpool.Pool) error {
 		fmt.Sprintf(
 			`CREATE TABLE IF NOT EXISTS %s
 			(
-				id bigserial,
-				position GEOGRAPHY(POINT, 4326) NOT NULL
+				id              bigserial,
+				position        GEOGRAPHY(POINT, 4326) NOT NULL
 			)`,
 			tableVehicleState,
 		),
@@ -66,6 +67,9 @@ func getPosition(logger *log.Logger, db *pgxpool.Pool, id int64) (vehicleState, 
 			id,
 		),
 	).Scan(wkb.Scanner(&position))
+	if err == pgx.ErrNoRows {
+		err = ErrorNotFound // return custom error
+	}
 	return vehicleState{Position: position}, err
 }
 

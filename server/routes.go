@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v4"
 )
 
 func welcome(c *gin.Context) {
@@ -52,7 +51,7 @@ func (srv ApplicationServer) getUser(c *gin.Context) {
 		return
 	}
 	retrievedUser, err := getUser(srv.logger, srv.db, id)
-	if err == pgx.ErrNoRows {
+	if err == ErrorNotFound {
 		c.Status(http.StatusNotFound)
 		return
 	}

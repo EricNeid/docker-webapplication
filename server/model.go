@@ -5,7 +5,8 @@ import (
 )
 
 type vehicleState struct {
-	Position orb.Point `json:"position"`
+	Position  orb.Point `json:"position"`
+	Timestamp string    `json:"timestamp"`
 }
 
 type user struct {

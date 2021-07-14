@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-func TestPositionSchemaIntegration(t *testing.T) {
+func TestVehicleStateSchemaIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test")
 	}
@@ -29,7 +29,7 @@ func TestPositionSchemaIntegration(t *testing.T) {
 	})
 
 	var id int64
-	t.Run("adding position", func(t *testing.T) {
+	t.Run("add", func(t *testing.T) {
 		// arrange
 		position := vehicleState{Position: [2]float64{20, 30}}
 		// action
@@ -39,7 +39,7 @@ func TestPositionSchemaIntegration(t *testing.T) {
 		verify.Assert(t, id > 0, "no id returned")
 	})
 
-	t.Run("getting position by id", func(t *testing.T) {
+	t.Run("get by id", func(t *testing.T) {
 		// action
 		position, err := getPosition(logger, db, id)
 		// verify
@@ -48,7 +48,7 @@ func TestPositionSchemaIntegration(t *testing.T) {
 		verify.Assert(t, position.Position.Y()-30.0 < 0.1, "Unexpected value returned")
 	})
 
-	t.Run("Getting all positions", func(t *testing.T) {
+	t.Run("get all", func(t *testing.T) {
 		// action
 		positions, err := getPositions(logger, db)
 		// verify
@@ -56,14 +56,14 @@ func TestPositionSchemaIntegration(t *testing.T) {
 		verify.Equals(t, 1, len(positions))
 	})
 
-	t.Run("delete position by id", func(t *testing.T) {
+	t.Run("delete by id", func(t *testing.T) {
 		// action
 		err := deletePosition(logger, db, id)
 		// verify
 		verify.Ok(t, err)
 	})
 
-	t.Run("getting position by id, should return nil", func(t *testing.T) {
+	t.Run("get by id, should return nil", func(t *testing.T) {
 		// action
 		_, err := getPosition(logger, db, id)
 		// verify
