@@ -22,7 +22,8 @@ func CreateTablePositions(logger *log.Logger, db *pgxpool.Pool) error {
 			`CREATE TABLE IF NOT EXISTS %s
 			(
 				id              bigserial,
-				position        GEOGRAPHY(POINT, 4326) NOT NULL
+				position        GEOGRAPHY(POINT, 4326) NOT NULL,
+				state_timestamp TIMESTAMP WITH TIME ZONE
 			)`,
 			tableVehicleState,
 		),
@@ -34,9 +35,10 @@ func addPosition(logger *log.Logger, db *pgxpool.Pool, state vehicleState) (int6
 	_, err := db.Exec(
 		context.Background(),
 		fmt.Sprintf(
-			"INSERT INTO %s (position) VALUES (ST_GeomFromText('%s'))",
+			"INSERT INTO %s (position, state_timestamp) VALUES (ST_GeomFromText('%s'), '%s')",
 			tableVehicleState,
 			wkt.MarshalString(state.Position),
+			state.Timestamp,
 		),
 	)
 

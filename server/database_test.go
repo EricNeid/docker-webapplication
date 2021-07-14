@@ -31,7 +31,7 @@ func TestVehicleStateSchemaIntegration(t *testing.T) {
 	var id int64
 	t.Run("add", func(t *testing.T) {
 		// arrange
-		position := vehicleState{Position: [2]float64{20, 30}}
+		position := vehicleState{Position: [2]float64{20, 30}, Timestamp: "2008-02-01T09:00:22+05"}
 		// action
 		id, err = addPosition(logger, db, position)
 		// verify
