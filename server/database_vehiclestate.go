@@ -60,19 +60,20 @@ func deletePosition(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 // getPosition returns the position that is ascoiated with the given id.
 // If no position exists, pgx.ErrNoRows is returned.
 func getPosition(logger *log.Logger, db *pgxpool.Pool, id int64) (vehicleState, error) {
-	var position orb.Point
+	var result vehicleState
+
 	err := db.QueryRow(
 		context.Background(),
 		fmt.Sprintf(
-			`SELECT ST_AsBinary(position) FROM %s WHERE id=%d`,
+			`SELECT ST_AsBinary(position), state_timestamp::text FROM %s WHERE id=%d`,
 			tableVehicleState,
 			id,
 		),
-	).Scan(wkb.Scanner(&position))
+	).Scan(wkb.Scanner(&result.Position), &result.Timestamp)
 	if err == pgx.ErrNoRows {
 		err = ErrorNotFound // return custom error
 	}
-	return vehicleState{Position: position}, err
+	return result, err
 }
 
 func getPositions(logger *log.Logger, db *pgxpool.Pool) ([]vehicleState, error) {
