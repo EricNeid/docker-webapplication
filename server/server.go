@@ -63,11 +63,11 @@ func (srv ApplicationServer) SetLogWriter(out io.Writer) {
 func (srv ApplicationServer) CreateDatabaseStructure() error {
 	logger := srv.logger
 	db := srv.db
-	err := CreateTablePositions(logger, db)
+	err := createTableVehicleState(logger, db)
 	if err != nil {
 		return err
 	}
-	err = CreateTableUsers(logger, db)
+	err = createTableUsers(logger, db)
 	return err
 }
 

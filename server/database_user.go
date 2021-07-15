@@ -11,7 +11,7 @@ import (
 
 const tableUser = "application_user"
 
-func CreateTableUsers(logger *log.Logger, db *pgxpool.Pool) error {
+func createTableUsers(logger *log.Logger, db *pgxpool.Pool) error {
 	logger.Printf("creating table %s\n", tableUser)
 	_, err := db.Exec(
 		context.Background(),
@@ -32,10 +32,10 @@ func addUser(logger *log.Logger, db *pgxpool.Pool, user user) (int64, error) {
 	err := db.QueryRow(
 		context.Background(),
 		fmt.Sprintf(
-			`INSERT INTO %s (username) VALUES ('%s') RETURNING id`,
+			`INSERT INTO %s (username) VALUES ($1) RETURNING id`,
 			tableUser,
-			user.Name,
 		),
+		user.Name,
 	).Scan(&id)
 	return id, err
 }
@@ -44,10 +44,10 @@ func deleteUser(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 	_, err := db.Exec(
 		context.Background(),
 		fmt.Sprintf(
-			`DELETE FROM %s WHERE id=%d`,
+			`DELETE FROM %s WHERE id=$1`,
 			tableUser,
-			id,
 		),
+		id,
 	)
 	return err
 }
@@ -55,19 +55,19 @@ func deleteUser(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 // getUser returns the user that is ascoiated with the given id.
 // If no users exists, ErrorNotFound is returned.
 func getUser(logger *log.Logger, db *pgxpool.Pool, id int64) (user, error) {
-	var name string
+	var user user
 	err := db.QueryRow(
 		context.Background(),
 		fmt.Sprintf(
-			`SELECT username FROM %s WHERE id=%d`,
+			`SELECT username FROM %s WHERE id=$1`,
 			tableUser,
-			id,
 		),
-	).Scan(&name)
+		id,
+	).Scan(&user.Name)
 	if err == pgx.ErrNoRows {
 		err = ErrorNotFound // return custom error
 	}
-	return user{Name: name}, err
+	return user, err
 }
 
 func getUsers(logger *log.Logger, db *pgxpool.Pool) ([]user, error) {
@@ -87,12 +87,12 @@ func getUsers(logger *log.Logger, db *pgxpool.Pool) ([]user, error) {
 
 	// collect result
 	for rows.Next() {
-		var name string
-		err = rows.Scan(&name)
+		var user user
+		err = rows.Scan(&user.Name)
 		if err != nil {
 			return users, err
 		}
-		users = append(users, user{Name: name})
+		users = append(users, user)
 	}
 
 	return users, err

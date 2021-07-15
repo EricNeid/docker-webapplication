@@ -4,10 +4,12 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/EricNeid/go-webserver/internal/integrationtest"
 	"github.com/EricNeid/go-webserver/internal/verify"
 	"github.com/jackc/pgx/v4"
+	"github.com/paulmach/orb/encoding/wkt"
 )
 
 func TestVehicleStateSchemaIntegration(t *testing.T) {
@@ -23,7 +25,7 @@ func TestVehicleStateSchemaIntegration(t *testing.T) {
 	var err error
 	t.Run("creating table", func(t *testing.T) {
 		// action
-		err = CreateTablePositions(logger, db)
+		err = createTableVehicleState(logger, db)
 		// verify
 		verify.Ok(t, err)
 	})
@@ -31,9 +33,9 @@ func TestVehicleStateSchemaIntegration(t *testing.T) {
 	var id int64
 	t.Run("add", func(t *testing.T) {
 		// arrange
-		position := vehicleState{Position: [2]float64{20, 30}, Timestamp: "2008-02-01T09:00:22+05"}
+		result := vehicleState{Position: [2]float64{20, 30}, Timestamp: time.Date(2021, 6, 15, 9, 0, 0, 0, time.UTC)}
 		// action
-		id, err = addPosition(logger, db, position)
+		id, err = addVehicleState(logger, db, result)
 		// verify
 		verify.Ok(t, err)
 		verify.Assert(t, id > 0, "no id returned")
@@ -41,31 +43,35 @@ func TestVehicleStateSchemaIntegration(t *testing.T) {
 
 	t.Run("get by id", func(t *testing.T) {
 		// action
-		position, err := getPosition(logger, db, id)
+		result, err := getVehicleState(logger, db, id)
 		// verify
 		verify.Ok(t, err)
-		verify.Assert(t, position.Position.X()-20.0 < 0.1, "Unexpected value returned")
-		verify.Assert(t, position.Position.Y()-30.0 < 0.1, "Unexpected value returned")
+		verify.Assert(t, result.Position.X()-20.0 < 0.1, wkt.MarshalString(result.Position))
+		verify.Assert(t, result.Position.Y()-30.0 < 0.1, wkt.MarshalString(result.Position))
+		verify.Assert(t, result.Timestamp.Year() == 2021, result.Timestamp.String())
+		verify.Assert(t, result.Timestamp.Month() == 6, result.Timestamp.String())
+		verify.Assert(t, result.Timestamp.Day() == 15, result.Timestamp.String())
+		verify.Assert(t, result.Timestamp.Hour() == 9, result.Timestamp.String())
 	})
 
 	t.Run("get all", func(t *testing.T) {
 		// action
-		positions, err := getPositions(logger, db)
+		result, err := getVehicleStates(logger, db)
 		// verify
 		verify.Ok(t, err)
-		verify.Equals(t, 1, len(positions))
+		verify.Equals(t, 1, len(result))
 	})
 
 	t.Run("delete by id", func(t *testing.T) {
 		// action
-		err := deletePosition(logger, db, id)
+		err := deleteVehicleState(logger, db, id)
 		// verify
 		verify.Ok(t, err)
 	})
 
 	t.Run("get by id, should return nil", func(t *testing.T) {
 		// action
-		_, err := getPosition(logger, db, id)
+		_, err := getVehicleState(logger, db, id)
 		// verify
 		verify.Equals(t, pgx.ErrNoRows, err)
 	})
@@ -84,7 +90,7 @@ func TestUserSchemaIntegration(t *testing.T) {
 	var err error
 	t.Run("creating table", func(t *testing.T) {
 		// action
-		err = CreateTableUsers(logger, db)
+		err = createTableUsers(logger, db)
 		// verify
 		verify.Ok(t, err)
 	})
@@ -102,19 +108,19 @@ func TestUserSchemaIntegration(t *testing.T) {
 
 	t.Run("getting user by id", func(t *testing.T) {
 		// action
-		user, err := getUser(logger, db, id)
+		result, err := getUser(logger, db, id)
 		// verify
 		verify.Ok(t, err)
-		verify.Equals(t, "testuser", user.Name)
+		verify.Equals(t, "testuser", result.Name)
 	})
 
 	t.Run("Getting all users", func(t *testing.T) {
 		// action
-		users, err := getUsers(logger, db)
+		result, err := getUsers(logger, db)
 		// verify
 		verify.Ok(t, err)
-		verify.Equals(t, 1, len(users))
-		verify.Equals(t, "testuser", users[0].Name)
+		verify.Equals(t, 1, len(result))
+		verify.Equals(t, "testuser", result[0].Name)
 	})
 
 	t.Run("delete user by id", func(t *testing.T) {

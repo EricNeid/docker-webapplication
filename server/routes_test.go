@@ -37,7 +37,7 @@ func TestCrudUserIntegration(t *testing.T) {
 	db, _ := integrationtest.GetDbConnectionPool()
 	gin.SetMode(gin.TestMode)
 	unit := NewApplicationServer(db, ":5001")
-	CreateTableUsers(unit.logger, unit.db)
+	createTableUsers(unit.logger, unit.db)
 
 	var id int64
 	t.Run("Adding user", func(t *testing.T) {
