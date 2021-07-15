@@ -53,7 +53,10 @@ func NewApplicationServer(db *pgxpool.Pool, listenAddr string) ApplicationServer
 	router.DELETE("/users/:id", server.deleteUser)
 	router.POST("/users", server.addUser)
 
-	// vehicle state curd
+	// vehicle state crud
+	router.GET("/vehicleStates", server.getVehicleStates)
+	router.GET("/vehicleStates/:id", server.getVehicleState)
+	router.DELETE("/vehicleStates/:id", server.deleteVehicleState)
 	router.POST("/vehicleStates", server.addVehicleState)
 
 	return server

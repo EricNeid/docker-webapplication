@@ -12,6 +12,7 @@ import (
 	"github.com/EricNeid/go-webserver/internal/integrationtest"
 	"github.com/EricNeid/go-webserver/internal/verify"
 	"github.com/gin-gonic/gin"
+	"github.com/paulmach/orb/encoding/wkt"
 )
 
 func TestWelcome(t *testing.T) {
@@ -124,6 +125,7 @@ func TestCrudVehicleStateIntegration(t *testing.T) {
 	unit := NewApplicationServer(db, ":5001")
 	createTableVehicleState(unit.logger, unit.db)
 
+	var id int64
 	t.Run("Add", func(t *testing.T) {
 		// arrange
 		testdata, _ := json.Marshal(
@@ -143,6 +145,63 @@ func TestCrudVehicleStateIntegration(t *testing.T) {
 		}{}
 		err := json.NewDecoder(res.Body).Decode(&result)
 		verify.Ok(t, err)
+		id = result.VehicleStateId
+	})
 
+	t.Run("Get by id", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/vehicleStates/%d", id), nil)
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, http.StatusOK, res.Code)
+		result := struct {
+			VehicleState vehicleState `json:"vehicleState"`
+		}{}
+		err := json.NewDecoder(res.Body).Decode(&result)
+		verify.Ok(t, err)
+		verify.Assert(t, result.VehicleState.Position.X()-20.0 < 0.1, wkt.MarshalString(result.VehicleState.Position))
+		verify.Assert(t, result.VehicleState.Position.Y()-30.0 < 0.1, wkt.MarshalString(result.VehicleState.Position))
+		verify.Assert(t, result.VehicleState.Timestamp.Year() == 2021, result.VehicleState.Timestamp.String())
+		verify.Assert(t, result.VehicleState.Timestamp.Month() == 6, result.VehicleState.Timestamp.String())
+		verify.Assert(t, result.VehicleState.Timestamp.Day() == 15, result.VehicleState.Timestamp.String())
+		verify.Assert(t, result.VehicleState.Timestamp.Hour() == 9, result.VehicleState.Timestamp.String())
+	})
+
+	t.Run("Get all", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/vehicleStates", nil)
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, http.StatusOK, res.Code)
+		result := struct {
+			VehicleStates []vehicleState `json:"vehicleStates"`
+		}{}
+		err := json.NewDecoder(res.Body).Decode(&result)
+		verify.Ok(t, err)
+		verify.Equals(t, 1, len(result.VehicleStates))
+	})
+
+	t.Run("Delete by id", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("DELETE", fmt.Sprintf("/vehicleStates/%d", id), nil)
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, http.StatusNoContent, res.Code)
+	})
+
+	t.Run("Get by id should return 404", func(t *testing.T) {
+		// arrange
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/vehicleStates/%d", id), nil)
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, http.StatusNotFound, res.Code)
 	})
 }
