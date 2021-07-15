@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/EricNeid/go-webserver/internal/integrationtest"
 	"github.com/EricNeid/go-webserver/internal/verify"
@@ -107,5 +108,41 @@ func TestCrudUserIntegration(t *testing.T) {
 		unit.router.ServeHTTP(res, req)
 		// verify
 		verify.Equals(t, http.StatusNotFound, res.Code)
+	})
+}
+
+func TestCrudVehicleStateIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test")
+	}
+
+	// arrange
+	integrationtest.Setup()
+	defer integrationtest.Cleanup()
+	db, _ := integrationtest.GetDbConnectionPool()
+	gin.SetMode(gin.TestMode)
+	unit := NewApplicationServer(db, ":5001")
+	createTableVehicleState(unit.logger, unit.db)
+
+	t.Run("Add", func(t *testing.T) {
+		// arrange
+		testdata, _ := json.Marshal(
+			vehicleState{
+				Position:  [2]float64{20, 30},
+				Timestamp: time.Date(2021, 6, 15, 9, 0, 0, 0, time.UTC),
+			},
+		)
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/vehicleStates", strings.NewReader(string(testdata)))
+		// action
+		unit.router.ServeHTTP(res, req)
+		// verify
+		verify.Equals(t, http.StatusCreated, res.Code)
+		result := struct {
+			VehicleStateId int64 `json:"vehicleStateId"`
+		}{}
+		err := json.NewDecoder(res.Body).Decode(&result)
+		verify.Ok(t, err)
+
 	})
 }

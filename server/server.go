@@ -47,10 +47,14 @@ func NewApplicationServer(db *pgxpool.Pool, listenAddr string) ApplicationServer
 	// configure routes
 	router.GET("/", welcome)
 
+	// user crud
 	router.GET("/users", server.getUsers)
 	router.GET("/users/:id", server.getUser)
 	router.DELETE("/users/:id", server.deleteUser)
 	router.POST("/users", server.addUser)
+
+	// vehicle state curd
+	router.POST("/vehicleStates", server.addVehicleState)
 
 	return server
 }
