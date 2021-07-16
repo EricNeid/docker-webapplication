@@ -9,7 +9,7 @@ import (
 	"github.com/EricNeid/go-webserver/internal/integrationtest"
 	"github.com/EricNeid/go-webserver/internal/verify"
 	"github.com/jackc/pgx/v4"
-	"github.com/paulmach/orb/encoding/wkt"
+	"github.com/paulmach/orb"
 )
 
 func TestVehicleStateSchemaIntegration(t *testing.T) {
@@ -32,10 +32,13 @@ func TestVehicleStateSchemaIntegration(t *testing.T) {
 
 	var id int64
 	t.Run("add", func(t *testing.T) {
-		// arrange
-		result := vehicleState{Position: [2]float64{20, 30}, Timestamp: time.Date(2021, 6, 15, 9, 0, 0, 0, time.UTC)}
 		// action
-		id, err = addVehicleState(logger, db, result)
+		id, err = addVehicleState(
+			logger,
+			db,
+			orb.Point([2]float64{20, 30}),
+			time.Date(2021, 6, 15, 9, 0, 0, 0, time.UTC),
+		)
 		// verify
 		verify.Ok(t, err)
 		verify.Assert(t, id > 0, "no id returned")
@@ -46,12 +49,13 @@ func TestVehicleStateSchemaIntegration(t *testing.T) {
 		result, err := getVehicleState(logger, db, id)
 		// verify
 		verify.Ok(t, err)
-		verify.Assert(t, result.Position.X()-20.0 < 0.1, wkt.MarshalString(result.Position))
-		verify.Assert(t, result.Position.Y()-30.0 < 0.1, wkt.MarshalString(result.Position))
-		verify.Assert(t, result.Timestamp.Year() == 2021, result.Timestamp.String())
-		verify.Assert(t, result.Timestamp.Month() == 6, result.Timestamp.String())
-		verify.Assert(t, result.Timestamp.Day() == 15, result.Timestamp.String())
-		verify.Assert(t, result.Timestamp.Hour() == 9, result.Timestamp.String())
+		p := result.Position.Geometry().(orb.Point)
+		verify.Condition(t, p.X()-20.0 < 0.1)
+		verify.Condition(t, p.Y()-30.0 < 0.1)
+		verify.Condition(t, result.Timestamp.Year() == 2021)
+		verify.Condition(t, result.Timestamp.Month() == 6)
+		verify.Condition(t, result.Timestamp.Day() == 15)
+		verify.Condition(t, result.Timestamp.Hour() == 9)
 	})
 
 	t.Run("get all", func(t *testing.T) {

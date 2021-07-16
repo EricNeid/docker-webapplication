@@ -7,12 +7,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/EricNeid/go-webserver/internal/integrationtest"
 	"github.com/EricNeid/go-webserver/internal/verify"
 	"github.com/gin-gonic/gin"
-	"github.com/paulmach/orb/encoding/wkt"
+	"github.com/paulmach/orb"
 )
 
 func TestWelcome(t *testing.T) {
@@ -128,14 +127,20 @@ func TestCrudVehicleStateIntegration(t *testing.T) {
 	var id int64
 	t.Run("Add", func(t *testing.T) {
 		// arrange
-		testdata, _ := json.Marshal(
-			vehicleState{
-				Position:  [2]float64{20, 30},
-				Timestamp: time.Date(2021, 6, 15, 9, 0, 0, 0, time.UTC),
-			},
-		)
+		testdata := `
+		{
+			"timestamp": "2021-06-15T09:00:00Z",
+			"position": {
+				"type": "Point",
+				"coordinates": [
+					20,
+					30
+				]
+			}
+		}
+		`
 		res := httptest.NewRecorder()
-		req := httptest.NewRequest("POST", "/vehicleStates", strings.NewReader(string(testdata)))
+		req := httptest.NewRequest("POST", "/vehicleStates", strings.NewReader(testdata))
 		// action
 		unit.router.ServeHTTP(res, req)
 		// verify
@@ -161,12 +166,13 @@ func TestCrudVehicleStateIntegration(t *testing.T) {
 		}{}
 		err := json.NewDecoder(res.Body).Decode(&result)
 		verify.Ok(t, err)
-		verify.Assert(t, result.VehicleState.Position.X()-20.0 < 0.1, wkt.MarshalString(result.VehicleState.Position))
-		verify.Assert(t, result.VehicleState.Position.Y()-30.0 < 0.1, wkt.MarshalString(result.VehicleState.Position))
-		verify.Assert(t, result.VehicleState.Timestamp.Year() == 2021, result.VehicleState.Timestamp.String())
-		verify.Assert(t, result.VehicleState.Timestamp.Month() == 6, result.VehicleState.Timestamp.String())
-		verify.Assert(t, result.VehicleState.Timestamp.Day() == 15, result.VehicleState.Timestamp.String())
-		verify.Assert(t, result.VehicleState.Timestamp.Hour() == 9, result.VehicleState.Timestamp.String())
+		point := result.VehicleState.Position.Geometry().(orb.Point)
+		verify.Condition(t, point.X()-20.0 < 0.1)
+		verify.Condition(t, point.Y()-30.0 < 0.1)
+		verify.Condition(t, result.VehicleState.Timestamp.Year() == 2021)
+		verify.Condition(t, result.VehicleState.Timestamp.Month() == 6)
+		verify.Condition(t, result.VehicleState.Timestamp.Day() == 15)
+		verify.Condition(t, result.VehicleState.Timestamp.Hour() == 9)
 	})
 
 	t.Run("Get all", func(t *testing.T) {

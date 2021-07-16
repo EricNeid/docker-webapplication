@@ -17,6 +17,14 @@ func Assert(t *testing.T, condition bool, msg string, v ...interface{}) {
 	}
 }
 
+func Condition(t *testing.T, condition bool, v ...interface{}) {
+	if !condition {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("%s:%d: "+"\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
+		t.FailNow()
+	}
+}
+
 // Ok fails the test if an err is not nil.
 func Ok(t *testing.T, err error) {
 	if err != nil {

@@ -3,12 +3,12 @@ package server
 import (
 	"time"
 
-	"github.com/paulmach/orb"
+	"github.com/paulmach/orb/geojson"
 )
 
 type vehicleState struct {
-	Position  orb.Point `json:"position"`
-	Timestamp time.Time `json:"timestamp"`
+	Position  geojson.Geometry `json:"position"`
+	Timestamp time.Time        `json:"timestamp"`
 }
 
 type user struct {

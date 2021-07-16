@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/paulmach/orb"
 )
 
 func (srv ApplicationServer) addVehicleState(c *gin.Context) {
@@ -13,7 +14,7 @@ func (srv ApplicationServer) addVehicleState(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	id, err := addVehicleState(srv.logger, srv.db, data)
+	id, err := addVehicleState(srv.logger, srv.db, data.Position.Geometry().(orb.Point), data.Timestamp)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
