@@ -14,6 +14,8 @@ import (
 	"github.com/EricNeid/go-webserver/server"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
+
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -23,62 +25,36 @@ var (
 	dbUser     string = "postgres"
 	dbPass     string = "postgres"
 	dbName     string = "localdb"
+
+	logFile string = ""
 )
 
-func readEnvironmentVariables() {
-	value, isSet := os.LookupEnv("LISTEN_ADDR")
-	if isSet {
-		listenAddr = value
-	}
-
-	value, isSet = os.LookupEnv("DB_HOST")
-	if isSet {
-		dbHost = value
-	}
-
-	value, isSet = os.LookupEnv("DB_PORT")
-	if isSet {
-		dbPort, _ = strconv.Atoi(value)
-	}
-
-	value, isSet = os.LookupEnv("DB_USER")
-	if isSet {
-		dbUser = value
-	}
-
-	value, isSet = os.LookupEnv("DB_PASS")
-	if isSet {
-		dbPass = value
-	}
-
-	value, isSet = os.LookupEnv("DB_NAME")
-	if isSet {
-		dbName = value
-	}
-}
-
-func readCli() {
-	flag.StringVar(&listenAddr, "listen-addr", listenAddr, "server listen address")
-	flag.StringVar(&dbHost, "db-host", dbHost, "database host adress")
-	flag.IntVar(&dbPort, "db-port", dbPort, "database port")
-	flag.StringVar(&dbUser, "db-user", dbUser, "database user credential")
-	flag.StringVar(&dbPass, "db-pass", dbPass, "database user password")
-	flag.StringVar(&dbName, "db-name", dbName, "database name")
-
-	flag.Parse()
+func init() {
+	readConfigFromEnvironment()
+	readConfigFromCli()
 }
 
 func main() {
-	readEnvironmentVariables()
-	readCli()
-
-	logFile, _ := os.Create("server.log")
-	logWriter := io.MultiWriter(os.Stdout, logFile)
+	// prepare logging
+	var logWriter io.Writer
+	if len(logFile) > 0 {
+		logWriter = io.MultiWriter(
+			os.Stdout,
+			&lumberjack.Logger{
+				Filename:   logFile,
+				MaxSize:    500, // megabytes
+				MaxBackups: 3,
+				MaxAge:     28, //days
+			},
+		)
+	} else {
+		logWriter = os.Stdout
+	}
 	logger := log.New(logWriter, "main", log.LstdFlags)
 
+	// prepare shutdown channel
 	done := make(chan bool, 1)
 	quit := make(chan os.Signal, 1)
-
 	signal.Notify(quit, os.Interrupt)
 
 	// create db pool
@@ -108,4 +84,53 @@ func main() {
 	<-done
 	db.Close()
 	logger.Println("Server stopped")
+}
+
+func readConfigFromEnvironment() {
+	value, isSet := os.LookupEnv("LISTEN_ADDR")
+	if isSet {
+		listenAddr = value
+	}
+
+	value, isSet = os.LookupEnv("DB_HOST")
+	if isSet {
+		dbHost = value
+	}
+
+	value, isSet = os.LookupEnv("DB_PORT")
+	if isSet {
+		dbPort, _ = strconv.Atoi(value)
+	}
+
+	value, isSet = os.LookupEnv("DB_USER")
+	if isSet {
+		dbUser = value
+	}
+
+	value, isSet = os.LookupEnv("DB_PASS")
+	if isSet {
+		dbPass = value
+	}
+
+	value, isSet = os.LookupEnv("DB_NAME")
+	if isSet {
+		dbName = value
+	}
+
+	value, isSet = os.LookupEnv("LOG_FILE")
+	if isSet {
+		logFile = value
+	}
+}
+
+func readConfigFromCli() {
+	flag.StringVar(&listenAddr, "listen-addr", listenAddr, "server listen address")
+	flag.StringVar(&dbHost, "db-host", dbHost, "database host adress")
+	flag.IntVar(&dbPort, "db-port", dbPort, "database port")
+	flag.StringVar(&dbUser, "db-user", dbUser, "database user credential")
+	flag.StringVar(&dbPass, "db-pass", dbPass, "database user password")
+	flag.StringVar(&dbName, "db-name", dbName, "database name")
+	flag.StringVar(&logFile, "log-file", logFile, "Optional: write log to this file")
+
+	flag.Parse()
 }
