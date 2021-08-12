@@ -18,7 +18,11 @@ make all
 Send test request:
 
 ```bash
-curl -d '{"username":"max"}' -H "Content-Type: application/json" -X POST http://localhost:5000/user
+curl -d '{"username":"max"}' -H "Content-Type: application/json" -X POST http://localhost:5000/users
+```
+
+```bash
+curl -d '{"timestamp":"2021-06-15T09:00:00Z", "position": { "type": "Point", "coordinates": [20,30]}}' -H "Content-Type: application/json" -X POST http://localhost:5000/vehicleStates
 ```
 
 ## Testing
