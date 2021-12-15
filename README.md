@@ -1,6 +1,6 @@
 # About
 
-A simple REST-Full service. A dockerized environment with PostGIS database is provided aswell.
+A simple REST-Full service. A dockerize environment with PostGIS database is provided as well.
 
 ## Components
 
@@ -9,7 +9,7 @@ A simple REST-Full service. A dockerized environment with PostGIS database is pr
 
 ## Quickstart
 
-Use the provided Makefile for your convience:
+Use the provided Makefile for your convenience:
 
 ```bash
 make all
@@ -27,7 +27,7 @@ curl -d '{"timestamp":"2021-06-15T09:00:00Z", "position": { "type": "Point", "co
 
 ## Testing
 
-Unit and intengration test (using a PostGIS Container) are provided. Running integration tests requires docker in your path.
+Unit and integration test (using a PostGIS Container) are provided. Running integration tests requires docker in your path.
 
 To run unit tests:
 
