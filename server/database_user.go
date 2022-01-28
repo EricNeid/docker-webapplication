@@ -52,7 +52,7 @@ func deleteUser(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 	return err
 }
 
-// getUser returns the user that is ascoiated with the given id.
+// getUser returns the user that is associated with the given id.
 // If no users exists, ErrorNotFound is returned.
 func getUser(logger *log.Logger, db *pgxpool.Pool, id int64) (user, error) {
 	var user user

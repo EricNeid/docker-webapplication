@@ -58,7 +58,7 @@ func deleteVehicleState(logger *log.Logger, db *pgxpool.Pool, id int64) error {
 	return err
 }
 
-// getVehicleState returns the position that is ascoiated with the given id.
+// getVehicleState returns the position that is associated with the given id.
 // If no position exists, pgx.ErrNoRows is returned.
 func getVehicleState(logger *log.Logger, db *pgxpool.Pool, id int64) (vehicleState, error) {
 	var position orb.Point
