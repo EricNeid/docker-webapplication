@@ -125,7 +125,7 @@ func readConfigFromEnvironment() {
 
 func readConfigFromCli() {
 	flag.StringVar(&listenAddr, "listen-addr", listenAddr, "server listen address")
-	flag.StringVar(&dbHost, "db-host", dbHost, "database host adress")
+	flag.StringVar(&dbHost, "db-host", dbHost, "database host address")
 	flag.IntVar(&dbPort, "db-port", dbPort, "database port")
 	flag.StringVar(&dbUser, "db-user", dbUser, "database user credential")
 	flag.StringVar(&dbPass, "db-pass", dbPass, "database user password")
