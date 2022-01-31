@@ -1,4 +1,4 @@
-all: clean build run
+all: clean build start
 
 build:
 	docker-compose build --no-cache --force
@@ -6,13 +6,16 @@ build:
 clean:
 	docker-compose down --remove-orphans
 
-run:
+start:
 	docker-compose up -d db
 	sleep 10
 	docker-compose up -d webserver
 
 test:
 	go test -short ./...
+
+test_full:
+	go test ./...
 
 check:
 	go test ./...
