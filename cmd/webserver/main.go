@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
 
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -35,10 +35,10 @@ func init() {
 }
 
 func main() {
-	// prepare logging
-	var logWriter io.Writer
-	if len(logFile) > 0 {
-		logWriter = io.MultiWriter(
+	// prepare logging and gin
+	var logOut io.Writer
+	if logFile != "" {
+		logOut = io.MultiWriter(
 			os.Stdout,
 			&lumberjack.Logger{
 				Filename:   logFile,
@@ -48,9 +48,11 @@ func main() {
 			},
 		)
 	} else {
-		logWriter = os.Stdout
+		logOut = os.Stdout
 	}
-	logger := log.New(logWriter, "main", log.LstdFlags)
+	gin.DefaultWriter = logOut
+	log.SetOutput(logOut)
+	log.SetPrefix("[APP] ")
 
 	// prepare shutdown channel
 	done := make(chan bool, 1)
@@ -58,67 +60,59 @@ func main() {
 	signal.Notify(quit, os.Interrupt)
 
 	// create db pool
-	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", dbUser, dbPass, dbHost, dbPort, dbName)
-	log.Printf("Connecting to db using: %s", dbUrl)
-	db, err := pgxpool.Connect(context.Background(), dbUrl)
+	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", dbUser, dbPass, dbHost, dbPort, dbName)
+	log.Printf("Connecting to db using: %s", dbURL)
+	db, err := pgxpool.Connect(context.Background(), dbURL)
 	if err != nil {
-		logger.Fatalf("Could not create database pool: %v\n", err)
+		log.Fatalf("Could not create database pool: %v\n", err)
 	}
 
 	// create server
 	gin.SetMode(gin.ReleaseMode)
 	server := server.NewApplicationServer(db, listenAddr)
-	server.SetLogWriter(logWriter)
 	go server.GracefullShutdown(quit, done)
 
-	logger.Println("Creating database structure", listenAddr)
+	log.Println("Creating database structure", listenAddr)
 	if err := server.CreateDatabaseStructure(); err != nil {
-		logger.Fatalf("Failed to created required database structure: %v\n", err)
+		log.Fatalf("Failed to created required database structure: %v\n", err)
 	}
 
-	logger.Println("Server is ready to handle requests at", listenAddr)
+	log.Println("Server is ready to handle requests at", listenAddr)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
+		log.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
 	}
 
 	<-done
 	db.Close()
-	logger.Println("Server stopped")
+	log.Println("Server stopped")
 }
 
 func readConfigFromEnvironment() {
-	value, isSet := os.LookupEnv("LISTEN_ADDR")
-	if isSet {
+	if value, isSet := os.LookupEnv("LISTEN_ADDR"); isSet {
 		listenAddr = value
 	}
 
-	value, isSet = os.LookupEnv("DB_HOST")
-	if isSet {
+	if value, isSet := os.LookupEnv("DB_HOST"); isSet {
 		dbHost = value
 	}
 
-	value, isSet = os.LookupEnv("DB_PORT")
-	if isSet {
+	if value, isSet := os.LookupEnv("DB_PORT"); isSet {
 		dbPort, _ = strconv.Atoi(value)
 	}
 
-	value, isSet = os.LookupEnv("DB_USER")
-	if isSet {
+	if value, isSet := os.LookupEnv("DB_USER"); isSet {
 		dbUser = value
 	}
 
-	value, isSet = os.LookupEnv("DB_PASS")
-	if isSet {
+	if value, isSet := os.LookupEnv("DB_PASS"); isSet {
 		dbPass = value
 	}
 
-	value, isSet = os.LookupEnv("DB_NAME")
-	if isSet {
+	if value, isSet := os.LookupEnv("DB_NAME"); isSet {
 		dbName = value
 	}
 
-	value, isSet = os.LookupEnv("LOG_FILE")
-	if isSet {
+	if value, isSet := os.LookupEnv("LOG_FILE"); isSet {
 		logFile = value
 	}
 }

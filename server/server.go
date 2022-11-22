@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+// ApplicationServer is a simple wrapper around our web service.
+// It provides gracefull shutdown among other things.
 type ApplicationServer struct {
 	logger    *log.Logger
 	db        *pgxpool.Pool
@@ -27,11 +28,12 @@ func NewApplicationServer(db *pgxpool.Pool, listenAddr string) ApplicationServer
 
 	// create router
 	router := gin.Default()
-	router.Use(gin.Logger())
 
 	// create application server
 	server := ApplicationServer{
 		logger: logger,
+		router: router,
+		db:     db,
 		webserver: &http.Server{
 			Addr:         listenAddr,
 			Handler:      router,
@@ -40,8 +42,6 @@ func NewApplicationServer(db *pgxpool.Pool, listenAddr string) ApplicationServer
 			WriteTimeout: 10 * time.Second,
 			IdleTimeout:  15 * time.Second,
 		},
-		db:     db,
-		router: router,
 	}
 
 	// configure routes
@@ -62,11 +62,7 @@ func NewApplicationServer(db *pgxpool.Pool, listenAddr string) ApplicationServer
 	return server
 }
 
-func (srv ApplicationServer) SetLogWriter(out io.Writer) {
-	srv.logger.SetOutput(out)
-	gin.DefaultWriter = out
-}
-
+// CreateDatabaseStructure creates required database structure.
 func (srv ApplicationServer) CreateDatabaseStructure() error {
 	logger := srv.logger
 	db := srv.db
@@ -78,6 +74,7 @@ func (srv ApplicationServer) CreateDatabaseStructure() error {
 	return err
 }
 
+// GracefullShutdown initiates a gracefull shutdown.
 func (srv ApplicationServer) GracefullShutdown(quit <-chan os.Signal, done chan<- bool) {
 	<-quit
 	server := srv.webserver
@@ -96,6 +93,7 @@ func (srv ApplicationServer) GracefullShutdown(quit <-chan os.Signal, done chan<
 	close(done)
 }
 
+// ListenAndServe starts listening for requests.
 func (srv ApplicationServer) ListenAndServe() error {
 	return srv.webserver.ListenAndServe()
 }
